@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: querylens-postgres
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  querylens:
+    build: .
+    container_name: querylens-proxy
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5433:5433" # Proxy port (Microservices connect here)
+      - "8080:8080" # Web Dashboard & SSE port
+    command: >
+      proxy
+      --listen-port 5433
+      --target-host postgres
+      --target-port 5432
+      --dashboard-port 8080
+      --nplusone-threshold 5
+      --slow-threshold-ms 100
+
+volumes:
+  pgdata:

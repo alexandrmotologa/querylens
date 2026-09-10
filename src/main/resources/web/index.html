@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QueryLens — Real-Time PostgreSQL Query Analyzer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <div class="brand">
+                <div class="brand-badge">
+                    <span class="lens-icon">◉</span>
+                </div>
+                <div class="brand-titles">
+                    <h1>QueryLens</h1>
+                    <span class="brand-tagline">PostgreSQL Wire Analyzer & N+1 Hunter</span>
+                </div>
+            </div>
+            <div class="connection-status">
+                <span class="status-indicator live" id="live-indicator"></span>
+                <span class="status-text" id="status-text">Connecting...</span>
+                <span class="active-badge" id="client-count">Port 5433</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Overview Metrics -->
+        <section class="metrics-grid">
+            <div class="metric-card" id="card-qps">
+                <div class="metric-header">
+                    <span class="metric-label">Throughput</span>
+                    <span class="metric-unit">QPS</span>
+                </div>
+                <div class="metric-value" id="val-qps">0.0</div>
+                <div class="metric-subtext">Queries per second</div>
+            </div>
+
+            <div class="metric-card" id="card-total-queries">
+                <div class="metric-header">
+                    <span class="metric-label">Total Queries</span>
+                    <span class="metric-badge">All</span>
+                </div>
+                <div class="metric-value" id="val-total-queries">0</div>
+                <div class="metric-subtext" id="val-uptime">Uptime: 0s</div>
+            </div>
+
+            <div class="metric-card alert-card" id="card-violations">
+                <div class="metric-header">
+                    <span class="metric-label">Anti-Patterns Detected</span>
+                    <span class="metric-badge alert-badge" id="badge-violations">0</span>
+                </div>
+                <div class="metric-value" id="val-violations">0</div>
+                <div class="metric-subtext">N+1 cascades & slow scans</div>
+            </div>
+
+            <div class="metric-card" id="card-p99">
+                <div class="metric-header">
+                    <span class="metric-label">Tail Latency (P99)</span>
+                    <span class="metric-unit">ms</span>
+                </div>
+                <div class="metric-value" id="val-p99">0</div>
+                <div class="metric-subtext" id="val-p50">P50: 0 ms</div>
+            </div>
+        </section>
+
+        <!-- Active Violations Section -->
+        <section class="content-section" id="violations-section">
+            <div class="section-header">
+                <h2>Active Violations & Causal Analysis</h2>
+                <span class="section-tag" id="violation-count-tag">0 detected</span>
+            </div>
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="data-table" id="violations-table">
+                        <thead>
+                            <tr>
+                                <th>Pattern</th>
+                                <th>Repeats</th>
+                                <th>Latency</th>
+                                <th>Parent Driving Query</th>
+                                <th>Repeated Child Query</th>
+                                <th>Actionable Recommendation</th>
+                            </tr>
+                        </thead>
+                        <tbody id="violations-body">
+                            <tr class="empty-state-row">
+                                <td colspan="6">No database anti-patterns detected yet. Listening on port 5433...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Query Stream and Top Queries side-by-side or stacked -->
+        <div class="two-column-layout">
+            <!-- Live Query Stream -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>Live Query Stream</h2>
+                    <span class="section-tag">Streaming (SSE)</span>
+                </div>
+                <div class="table-card">
+                    <div class="table-responsive">
+                        <table class="data-table" id="stream-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Duration</th>
+                                    <th>Rows</th>
+                                    <th>SQL Query</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stream-body">
+                                <tr class="empty-state-row">
+                                    <td colspan="4">Awaiting database queries...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Top Slow Queries -->
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>Top Queries by Latency</h2>
+                    <span class="section-tag">P99 Profiler</span>
+                </div>
+                <div class="table-card">
+                    <div class="table-responsive">
+                        <table class="data-table" id="top-queries-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Calls</th>
+                                    <th>P50</th>
+                                    <th>P99</th>
+                                    <th>Normalized Statement</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-queries-body">
+                                <tr class="empty-state-row">
+                                    <td colspan="5">No query fingerprints recorded yet.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <div class="footer-content">
+            <span>QueryLens v1.0.0 &bull; Transparent PostgreSQL Proxy &bull; Java 21 & Netty</span>
+            <a href="https://github.com/alexandrmotologa/querylens" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
