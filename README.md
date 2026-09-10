@@ -1,4 +1,20 @@
-# QueryLens
+<p align="center">
+  <img src="docs/images/logo.png?raw=true" alt="QueryLens Logo" width="140" style="border-radius: 28px;" />
+</p>
+
+<h1 align="center">QueryLens</h1>
+
+<p align="center">
+  <strong>Real-Time PostgreSQL Wire Protocol Proxy & N+1 Anti-Pattern Hunter</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/alexandrmotologa/querylens/actions"><img src="https://img.shields.io/badge/build-passing-brightgreen.svg" alt="Build Status" /></a>
+  <a href="https://www.oracle.com/java/technologies/downloads/#java21"><img src="https://img.shields.io/badge/java-21%20LTS-orange.svg" alt="Java 21" /></a>
+  <a href="https://netty.io/"><img src="https://img.shields.io/badge/network-Netty%204.1-blue.svg" alt="Netty 4.1" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/protocol-PostgreSQL%20v3.0-336791.svg" alt="PostgreSQL v3.0" /></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License: MIT" /></a>
+</p>
 
 QueryLens is a transparent PostgreSQL v3.0 wire-protocol proxy and query analysis engine written in Java 21 LTS with Netty. It sits between client applications and a PostgreSQL server, inspecting traffic in flight to catch N+1 query patterns, slow queries, unindexed table scans, and transaction hoarding.
 
@@ -15,6 +31,26 @@ QueryLens is a transparent PostgreSQL v3.0 wire-protocol proxy and query analysi
                                     Live Stream        (Port 8080)
                                     & Webhooks         & /metrics
 ```
+
+## Live Dashboard & Visual Telemetry
+
+QueryLens serves an interactive real-time telemetry dashboard backed by Java 21 Virtual Threads and Server-Sent Events (SSE) at `http://localhost:8080/dashboard`.
+
+<p align="center">
+  <img src="docs/images/dashboard-overview.png?raw=true" alt="QueryLens Real-Time Overview Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 16px 32px rgba(0,0,0,0.25);" />
+</p>
+
+The overview displays live QPS with sparkline velocity, total queries, tail latencies (P50, P90, P99), and active anti-pattern detections with direct source code attribution (`controller`, `action`, `file`, `line`).
+
+### Live Query Stream & P99 Latency Profiler
+
+<p align="center">
+  <img src="docs/images/dashboard-stream.png?raw=true" alt="QueryLens Live Query Stream and Profiler" width="100%" style="border-radius: 12px; box-shadow: 0 16px 32px rgba(0,0,0,0.25);" />
+</p>
+
+- Stream Freeze / Resume: Pause the incoming stream to inspect specific database operations without losing background events.
+- Instant Search & Filter: Filter queries by table name, statement type (SELECT, UPDATE, INSERT), or minimum duration in milliseconds.
+- 1-Click Clipboard Actions: Copy parameterized SQL templates or formatted `EXPLAIN (ANALYZE, BUFFERS)` statements with a single click.
 
 ## Why QueryLens exists
 

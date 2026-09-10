@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle-clip">
+      <rect x="24" y="24" width="976" height="976" rx="220" />
+    </clipPath>
+
+    <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f5ff"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <linearGradient id="cyan-bright" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#00f5ff"/>
+    </linearGradient>
+
+    <linearGradient id="slate-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <filter id="subtle-shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.14" />
+    </filter>
+
+    <filter id="eye-glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#00f5ff" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <!-- Luxury White Squircle Container -->
+  <rect x="24" y="24" width="976" height="976" rx="220" fill="#ffffff" stroke="#e2e8f0" stroke-width="6" />
+
+  <g clip-path="url(#squircle-clip)">
+    <g transform="translate(512, 512)" filter="url(#subtle-shadow)">
+
+      <!-- Hexagonal Architectural Gateway Frame -->
+      <polygon points="
+        0,-390
+        338,-195
+        338,195
+        0,390
+        -338,195
+        -338,-195
+      " fill="none" stroke="#0f172a" stroke-width="40" stroke-linejoin="round" />
+
+      <!-- Inner High-Tech Telemetry Ring -->
+      <polygon points="
+        0,-355
+        307,-177
+        307,177
+        0,355
+        -307,177
+        -307,-177
+      " fill="none" stroke="#00f5ff" stroke-width="4" opacity="0.4" stroke-dasharray="16, 12" />
+
+      <!-- Corner Telemetry Nodes -->
+      <circle cx="0" cy="-355" r="5" fill="#00f5ff" opacity="0.8" />
+      <circle cx="307" cy="-177" r="5" fill="#00f5ff" opacity="0.8" />
+      <circle cx="307" cy="177" r="5" fill="#00f5ff" opacity="0.8" />
+      <circle cx="0" cy="355" r="5" fill="#00f5ff" opacity="0.8" />
+      <circle cx="-307" cy="177" r="5" fill="#00f5ff" opacity="0.8" />
+      <circle cx="-307" cy="-177" r="5" fill="#00f5ff" opacity="0.8" />
+
+      <!-- ==========================================
+           THE OCULAR LYNX ("THE WIRE HUNTER") MASCOT
+           Symmetrical Origami / Low-Poly Construction
+           ========================================== -->
+
+      <!-- EARS AND LYNX TUFTS -->
+      <!-- Left Ear Base and Shell -->
+      <polygon points="-135,-340 -220,-170 -110,-180" fill="#0b0f19" />
+      <polygon points="-135,-340 -110,-180 -65,-190" fill="#1e293b" />
+      <!-- Left Ear Lynx Tuft -->
+      <polygon points="-135,-340 -146,-378 -128,-345" fill="#00f5ff" />
+
+      <!-- Right Ear Base and Shell -->
+      <polygon points="135,-340 220,-170 110,-180" fill="#0f172a" />
+      <polygon points="135,-340 110,-180 65,-190" fill="#334155" />
+      <!-- Right Ear Lynx Tuft -->
+      <polygon points="135,-340 146,-378 128,-345" fill="#00f5ff" />
+
+      <!-- FOREHEAD AND TEMPLES -->
+      <!-- Crown Central Crest -->
+      <polygon points="0,-220 -65,-190 0,-120" fill="#334155" />
+      <polygon points="0,-220 65,-190 0,-120" fill="#475569" />
+
+      <!-- Brow Plates -->
+      <polygon points="-65,-190 -140,-140 0,-120" fill="#1e293b" />
+      <polygon points="65,-190 140,-140 0,-120" fill="#334155" />
+
+      <!-- Temples -->
+      <polygon points="-220,-170 -140,-140 -230,-60" fill="#0f172a" />
+      <polygon points="220,-170 140,-140 230,-60" fill="#1e293b" />
+
+      <!-- Mid Brow Ridge -->
+      <polygon points="0,-120 -85,-95 0,-45" fill="#1e293b" />
+      <polygon points="0,-120 85,-95 0,-45" fill="#334155" />
+
+      <polygon points="-85,-95 -155,-65 -95,-55" fill="#0f172a" />
+      <polygon points="85,-95 155,-65 95,-55" fill="#1e293b" />
+
+      <!-- CHEEKS AND FLARED JOWLS -->
+      <!-- Left Upper and Lower Ruff -->
+      <polygon points="-230,-60 -155,-65 -175,45 -260,50" fill="#1e293b" />
+      <polygon points="-260,50 -175,45 -130,150 -215,140" fill="#0f172a" />
+
+      <!-- Right Upper and Lower Ruff -->
+      <polygon points="230,-60 155,-65 175,45 260,50" fill="#334155" />
+      <polygon points="260,50 175,45 130,150 215,140" fill="#1e293b" />
+
+      <!-- Mid Cheek Plates -->
+      <polygon points="-155,-65 -95,-20 -95,65 -175,45" fill="#334155" />
+      <polygon points="155,-65 95,-20 95,65 175,45" fill="#475569" />
+
+      <!-- NOSE AND SNOUT -->
+      <polygon points="0,-45 -45,-45 -35,30 0,30" fill="#1e293b" />
+      <polygon points="0,-45 45,-45 35,30 0,30" fill="#334155" />
+      <polygon points="0,30 -35,30 0,85" fill="#0f172a" />
+      <polygon points="0,30 35,30 0,85" fill="#1e293b" />
+
+      <!-- Whisker Pads -->
+      <polygon points="-95,65 -35,30 0,85 -55,145" fill="#1e293b" />
+      <polygon points="95,65 35,30 0,85 55,145" fill="#334155" />
+
+      <!-- Geometric Cyan Nose Pad -->
+      <polygon points="-24,75 24,75 0,102" fill="#00f5ff" />
+
+      <!-- CHIN AND LOWER THROAT SHIELD -->
+      <polygon points="0,85 -55,145 0,175" fill="#0b0f19" />
+      <polygon points="0,85 55,145 0,175" fill="#0f172a" />
+      <polygon points="-55,145 55,145 0,225" fill="#1e293b" />
+
+      <!-- Throat Armor Plates -->
+      <polygon points="-130,150 -55,145 0,225 -70,275" fill="#0b0f19" />
+      <polygon points="130,150 55,145 0,225 70,275" fill="#0f172a" />
+      <polygon points="-70,275 0,225 70,275 0,310" fill="#1e293b" />
+      <!-- Cyan Core Node on Throat -->
+      <polygon points="-24,250 24,250 0,285" fill="#00f5ff" opacity="0.85" />
+
+      <!-- OCULAR LENS VISOR -->
+      <!-- Left Eye Dark Background Plate -->
+      <polygon points="-155,-65 -95,-55 -45,-45 -95,-20" fill="#080c14" stroke="#00f5ff" stroke-width="2" stroke-linejoin="round" />
+      <!-- Right Eye Dark Background Plate -->
+      <polygon points="155,-65 95,-55 45,-45 95,-20" fill="#080c14" stroke="#00f5ff" stroke-width="2" stroke-linejoin="round" />
+
+      <!-- LEFT OCULAR APERTURE LENS -->
+      <g transform="translate(-95, -42)" filter="url(#eye-glow)">
+        <!-- Outer Telemetry Ring -->
+        <circle cx="0" cy="0" r="22" fill="none" stroke="#00f5ff" stroke-width="2.5" />
+        <!-- Glowing Cyan Iris -->
+        <circle cx="0" cy="0" r="14" fill="url(#cyan-glow)" />
+        <!-- Pupil Pinpoint -->
+        <circle cx="0" cy="0" r="5" fill="#ffffff" />
+        <!-- Optical Crosshair Ticks -->
+        <line x1="-24" y1="0" x2="-16" y2="0" stroke="#00f5ff" stroke-width="2" stroke-linecap="round" />
+        <line x1="16" y1="0" x2="24" y2="0" stroke="#00f5ff" stroke-width="2" stroke-linecap="round" />
+        <line x1="0" y1="-24" x2="0" y2="-16" stroke="#00f5ff" stroke-width="2" stroke-linecap="round" />
+        <line x1="0" y1="16" x2="0" y2="24" stroke="#00f5ff" stroke-width="2" stroke-linecap="round" />
+      </g>
+
+      <!-- RIGHT OCULAR APERTURE LENS -->
+      <g transform="translate(95, -42)" filter="url(#eye-glow)">
+        <!-- Outer Telemetry Ring -->
+        <circle cx="0" cy="0" r="22" fill="none" stroke="#00f5ff" stroke-width="2.5" />
+        <!-- Glowing Cyan Iris -->
+        <circle cx="0" cy="0" r="14" fill="url(#cyan-glow)" />
+        <!-- Pupil Pinpoint -->
+        <circle cx="0" cy="0" r="5" fill="#ffffff" />
+        <!-- Optical Crosshair Ticks -->
+        <line x1="-24" y1="0" x2="-16" y2="0" stroke="#00f5ff" stroke-width="2" stroke-linecap="round" />
+        <line x1="16" y1="0" x2="24" y2="0" stroke="#00f5ff" stroke-width="2" stroke-linecap="round" />
+        <line x1="0" y1="-24" x2="0" y2="-16" stroke="#00f5ff" stroke-width="2" stroke-linecap="round" />
+        <line x1="0" y1="16" x2="0" y2="24" stroke="#00f5ff" stroke-width="2" stroke-linecap="round" />
+      </g>
+
+    </g>
+  </g>
+</svg>
