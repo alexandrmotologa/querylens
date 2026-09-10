@@ -1,7 +1,10 @@
 package com.engine.querylens.infrastructure.dashboard;
 
+import com.engine.querylens.application.service.ExplainPlanAnalyzer;
 import com.engine.querylens.application.service.InMemoryQueryStore;
 import com.engine.querylens.domain.port.QueryStoragePort;
+import com.engine.querylens.infrastructure.metrics.PrometheusMetricsExporter;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.sun.net.httpserver.HttpExchange;
@@ -19,7 +22,7 @@ import java.util.concurrent.Executors;
 
 /**
  * Embedded HTTP server backed by Java 21 Virtual Threads,
- * serving the live query monitoring dashboard, SSE streams, and REST telemetry endpoints.
+ * serving the live query monitoring dashboard, SSE streams, Prometheus metrics, and REST telemetry endpoints.
  */
 public class EmbeddedDashboardServer {
     private static final Logger log = LoggerFactory.getLogger(EmbeddedDashboardServer.class);
@@ -28,6 +31,8 @@ public class EmbeddedDashboardServer {
     private final QueryStoragePort storagePort;
     private final SseEventBroadcaster broadcaster;
     private final ObjectMapper objectMapper;
+    private final PrometheusMetricsExporter prometheusExporter;
+    private final ExplainPlanAnalyzer explainAnalyzer;
 
     private HttpServer server;
     private volatile boolean running = false;
@@ -38,6 +43,8 @@ public class EmbeddedDashboardServer {
         this.broadcaster = broadcaster;
         this.objectMapper = new ObjectMapper();
         this.objectMapper.registerModule(new JavaTimeModule());
+        this.prometheusExporter = new PrometheusMetricsExporter(storagePort);
+        this.explainAnalyzer = new ExplainPlanAnalyzer();
     }
 
     public synchronized void start() throws IOException {
@@ -65,10 +72,13 @@ public class EmbeddedDashboardServer {
         server.createContext("/api/stats", new StatsHandler());
         server.createContext("/api/violations", new ViolationsHandler());
         server.createContext("/api/queries", new QueriesHandler());
+        server.createContext("/api/explain", new ExplainHandler());
+        server.createContext("/metrics", new MetricsHandler());
 
         server.start();
         running = true;
         log.info("QueryLens web dashboard live at http://localhost:{}/dashboard", port);
+        log.info("QueryLens Prometheus metrics available at http://localhost:{}/metrics", port);
     }
 
     public synchronized void stop() {
@@ -117,7 +127,7 @@ public class EmbeddedDashboardServer {
             OutputStream os = exchange.getResponseBody();
             broadcaster.addClient(os);
 
-            // Send initial ping to confirm stream establishment
+            // Send initial ping
             os.write(": ping\n\n".getBytes(StandardCharsets.UTF_8));
             os.flush();
         }
@@ -147,6 +157,36 @@ public class EmbeddedDashboardServer {
                 sendResponse(exchange, 200, json, "application/json; charset=UTF-8");
             } else {
                 sendResponse(exchange, 200, "[]", "application/json; charset=UTF-8");
+            }
+        }
+    }
+
+    private class MetricsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String metrics = prometheusExporter.export();
+            sendResponse(exchange, 200, metrics, "text/plain; version=0.0.4; charset=UTF-8");
+        }
+    }
+
+    private class ExplainHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendResponse(exchange, 405, "Method Not Allowed. Use POST.", "text/plain");
+                return;
+            }
+
+            try (InputStream is = exchange.getRequestBody()) {
+                String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                JsonNode root = objectMapper.readTree(body);
+                String plan = root.has("plan") ? root.get("plan").asText() : body;
+
+                ExplainPlanAnalyzer.PlanAuditResult result = explainAnalyzer.analyze(plan);
+                String json = objectMapper.writeValueAsString(result);
+                sendResponse(exchange, 200, json, "application/json; charset=UTF-8");
+            } catch (Exception e) {
+                sendResponse(exchange, 400, "{\"error\": \"" + e.getMessage() + "\"}", "application/json; charset=UTF-8");
             }
         }
     }

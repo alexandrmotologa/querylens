@@ -30,6 +30,7 @@ public class QueryAnalysisEngine {
     private final QueryStoragePort storagePort;
     private final AlertPublisherPort alertPublisherPort;
     private final List<AntiPatternRule> rules;
+    private final SqlCommenterParser commenterParser = new SqlCommenterParser();
 
     private final Map<String, TransactionContext> activeTransactions = new ConcurrentHashMap<>();
 
@@ -59,7 +60,9 @@ public class QueryAnalysisEngine {
     }
 
     public QueryExecution onQueryCompleted(String channelId, String rawSql, Duration duration, long rowCount) {
-        QueryFingerprint fingerprint = normalizer.normalize(rawSql);
+        SqlCommenterParser.ParseResult parseResult = commenterParser.parse(rawSql);
+        String cleanSql = parseResult.cleanSql().isBlank() ? rawSql : parseResult.cleanSql();
+        QueryFingerprint fingerprint = normalizer.normalize(cleanSql);
 
         TransactionContext txContext = activeTransactions.get(channelId);
         String txId = txContext != null ? txContext.getTransactionId() : null;
@@ -72,7 +75,8 @@ public class QueryAnalysisEngine {
                 Instant.now().minus(duration),
                 duration,
                 rowCount,
-                txId
+                txId,
+                parseResult.metadata()
         );
 
         if (txContext != null) {
@@ -87,7 +91,10 @@ public class QueryAnalysisEngine {
         // Evaluate active rules
         for (AntiPatternRule rule : rules) {
             Optional<ViolationReport> reportOpt = rule.evaluateQuery(execution, txContext);
-            reportOpt.ifPresent(report -> handleViolation(report, channelId, txId));
+            reportOpt.ifPresent(report -> {
+                ViolationReport enriched = enrichReportWithSource(report, execution);
+                handleViolation(enriched, channelId, txId);
+            });
         }
 
         // Check sliding window N+1 if outside transaction
@@ -96,6 +103,31 @@ public class QueryAnalysisEngine {
         }
 
         return execution;
+    }
+
+    private ViolationReport enrichReportWithSource(ViolationReport report, QueryExecution execution) {
+        SqlMetadata meta = execution.sqlMetadata();
+        if (meta != null && meta.hasSourceInfo()) {
+            return ViolationReport.builder(report.type())
+                    .id(report.id())
+                    .timestamp(report.timestamp())
+                    .channelId(report.channelId())
+                    .transactionId(report.transactionId())
+                    .title(report.title())
+                    .description(report.description())
+                    .impact(report.impact())
+                    .repetitionCount(report.repetitionCount())
+                    .durationMs(report.durationMs())
+                    .rowCount(report.rowCount())
+                    .parentQuery(report.parentQuery())
+                    .offendingQuery(report.offendingQuery())
+                    .queryHash(report.queryHash())
+                    .recommendation(report.recommendation())
+                    .sourceLocation(meta.sourceSummary())
+                    .traceId(meta.traceparent() != null ? meta.traceparent() : "")
+                    .build();
+        }
+        return report;
     }
 
     private void checkSlidingWindowNPlusOne(QueryExecution execution, String channelId) {
@@ -119,6 +151,8 @@ public class QueryAnalysisEngine {
                     .offendingQuery(childSql)
                     .queryHash(hash)
                     .recommendation(advisorService.recommendJoinRewrite(parentSql, childSql))
+                    .sourceLocation(execution.sqlMetadata().sourceSummary())
+                    .traceId(execution.sqlMetadata().traceparent())
                     .build();
 
             handleViolation(report, channelId, null);

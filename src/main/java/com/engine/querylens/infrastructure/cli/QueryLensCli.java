@@ -13,7 +13,10 @@ import com.engine.querylens.domain.rules.NPlusOneRule;
 import com.engine.querylens.domain.rules.SlowQueryRule;
 import com.engine.querylens.infrastructure.dashboard.EmbeddedDashboardServer;
 import com.engine.querylens.infrastructure.dashboard.SseEventBroadcaster;
+import com.engine.querylens.infrastructure.report.JunitReportExporter;
+import com.engine.querylens.infrastructure.report.SarifReportExporter;
 import com.engine.querylens.infrastructure.tui.TerminalUiRenderer;
+import com.engine.querylens.infrastructure.webhook.WebhookAlertDispatcher;
 import com.engine.querylens.infrastructure.wire.QueryLensProxyServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -73,11 +76,20 @@ public class QueryLensCli implements Callable<Integer> {
         @Option(names = {"-m", "--max-tx-duration-ms"}, description = "Maximum idle duration in ms before flagging a long transaction (default: 5000)", defaultValue = "5000")
         private long maxTxDurationMs;
 
+        @Option(names = {"-w", "--webhook-url"}, description = "Webhook URL to dispatch alerts to (Slack, Discord, or generic endpoint)")
+        private String webhookUrl;
+
         @Option(names = {"-f", "--fail-on-violation"}, description = "Exit with non-zero status code on shutdown if violations occurred (CI/CD gate)")
         private boolean failOnViolation;
 
         @Option(names = {"-r", "--report-json"}, description = "File path to export detected violations report in JSON format upon exit")
         private String reportJsonPath;
+
+        @Option(names = {"--report-junit"}, description = "File path to export detected violations report in JUnit XML format upon exit")
+        private String reportJunitPath;
+
+        @Option(names = {"--report-sarif"}, description = "File path to export detected violations report in OASIS SARIF v2.1.0 format upon exit")
+        private String reportSarifPath;
 
         @Option(names = {"-q", "--quiet"}, description = "Suppress live query console ticker output")
         private boolean quiet;
@@ -91,7 +103,10 @@ public class QueryLensCli implements Callable<Integer> {
             AdvisorService advisorService = new AdvisorService();
             InMemoryQueryStore queryStore = new InMemoryQueryStore();
             SseEventBroadcaster sseBroadcaster = new SseEventBroadcaster();
-            TerminalUiRenderer tuiRenderer = new TerminalUiRenderer(sseBroadcaster, quiet);
+            WebhookAlertDispatcher webhookDispatcher = (webhookUrl != null && !webhookUrl.isBlank())
+                    ? new WebhookAlertDispatcher(webhookUrl)
+                    : null;
+            TerminalUiRenderer tuiRenderer = new TerminalUiRenderer(sseBroadcaster, webhookDispatcher, quiet);
 
             List<AntiPatternRule> rules = List.of(
                     new NPlusOneRule(nPlusOneThreshold),
@@ -112,6 +127,10 @@ public class QueryLensCli implements Callable<Integer> {
 
             System.out.printf("QueryLens Proxy listening on port %d -> forwarding to %s:%d%n", listenPort, targetHost, targetPort);
             System.out.printf("Web Dashboard active at http://localhost:%d/dashboard%n", dashboardPort);
+            System.out.printf("Prometheus Metrics available at http://localhost:%d/metrics%n", dashboardPort);
+            if (webhookUrl != null && !webhookUrl.isBlank()) {
+                System.out.printf("Alert Webhook configured -> %s%n", webhookUrl);
+            }
             System.out.println("Ready to intercept queries. Press Ctrl+C to terminate.");
             System.out.println();
 
@@ -120,8 +139,28 @@ public class QueryLensCli implements Callable<Integer> {
                 proxyServer.stop();
                 dashboardServer.stop();
 
+                List<ViolationReport> violations = queryStore.getRecentViolations(1000);
+
                 if (reportJsonPath != null && !reportJsonPath.isBlank()) {
                     exportJsonReport(queryStore, reportJsonPath);
+                }
+
+                if (reportJunitPath != null && !reportJunitPath.isBlank()) {
+                    try {
+                        JunitReportExporter.export(violations, new File(reportJunitPath));
+                        System.out.printf("Exported JUnit XML report to %s%n", new File(reportJunitPath).getAbsolutePath());
+                    } catch (Exception e) {
+                        log.error("Failed to export JUnit report to {}", reportJunitPath, e);
+                    }
+                }
+
+                if (reportSarifPath != null && !reportSarifPath.isBlank()) {
+                    try {
+                        SarifReportExporter.export(violations, new File(reportSarifPath));
+                        System.out.printf("Exported SARIF report to %s%n", new File(reportSarifPath).getAbsolutePath());
+                    } catch (Exception e) {
+                        log.error("Failed to export SARIF report to {}", reportSarifPath, e);
+                    }
                 }
 
                 if (failOnViolation && queryStore.getTotalViolationCount() > 0) {

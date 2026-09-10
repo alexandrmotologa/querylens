@@ -13,6 +13,7 @@ QueryLens is a transparent PostgreSQL v3.0 wire-protocol proxy and query analysi
                                             v                 v
                                     Terminal TUI       Web Dashboard
                                     Live Stream        (Port 8080)
+                                    & Webhooks         & /metrics
 ```
 
 ## Why QueryLens exists
@@ -31,20 +32,23 @@ QueryLens identifies these regressions before they reach production. Because it 
 - Transparent proxying: Decodes PostgreSQL v3.0 frontend and backend frames with sub-millisecond overhead. Supports both Simple Query (`Query`) and Extended Query (`Parse`, `Bind`, `Execute`, `Sync`) protocol flows.
 - SQL normalization and fingerprinting: Strips literals and constants to produce parameterized query templates. Groups executions under 64-bit cryptographic hashes.
 - Causal N+1 detection: Tracks query counts within transaction scopes and sliding windows. When a query repeats past a configured threshold, QueryLens links the repeated queries back to the preceding parent query.
+- SQLCommenter source attribution: Extracts controller, service method, source file, line number, and distributed trace IDs from SQL comments.
+- Execution plan analysis: Parses PostgreSQL `EXPLAIN (FORMAT JSON)` structures to flag sequential table scans and disk-spilling sort operations.
 - Latency and percentile tracking: Calculates running P50, P90, and P99 latencies for each query fingerprint.
 - Connection and transaction monitoring: Flags transactions that remain uncommitted past configured duration limits.
 - Cartesian product detection: Warns when queries return large result sets without an explicit `LIMIT` clause.
-- Terminal TUI: Displays real-time query throughput, active alerts, and top slow queries in the console.
-- Embedded web dashboard: Provides a browser interface served over Server-Sent Events (SSE) with live query flame charts and anti-pattern reports.
-- CI/CD quality gate: Supports headless execution modes with exit codes or JSON reports to fail integration test runs on detected anti-patterns.
+- Prometheus metrics exporter: Serves standard OpenMetrics / Prometheus metrics at `/metrics` for Grafana dashboards.
+- Webhook notifications: Asynchronously dispatches violation alert cards to Slack, Discord, or generic HTTP endpoints.
+- Interactive web dashboard: Provides a browser interface served over Server-Sent Events (SSE) with live query stream, pause/resume toggles, instant search filtering, 1-click clipboard actions, and sparkline graphs.
+- CI/CD quality gates: Exports violation reports in JSON, standard JUnit XML, or OASIS SARIF v2.1.0 formats to fail automated builds and produce inline code annotations in GitHub Actions pull request diffs.
 
 ## Architecture
 
 QueryLens uses a hexagonal structure:
 
-- `domain`: Pure Java 21 business logic with zero framework dependencies. Contains models (`QueryFingerprint`, `QueryExecution`, `TransactionContext`), anti-pattern rules (`NPlusOneRule`, `SlowQueryRule`, `LongTransactionRule`), and domain events.
-- `application`: Services that coordinate analysis, maintain sliding time windows, compute percentiles, and generate recommendations.
-- `infrastructure`: Netty wire codecs for PostgreSQL v3.0, upstream/downstream socket handlers, Picocli command runner, and the embedded HTTP/SSE dashboard.
+- `domain`: Pure Java 21 business logic with zero framework dependencies. Contains models (`QueryFingerprint`, `QueryExecution`, `TransactionContext`, `SqlMetadata`), anti-pattern rules (`NPlusOneRule`, `SlowQueryRule`, `LongTransactionRule`), and domain events.
+- `application`: Services that coordinate analysis, maintain sliding time windows, compute percentiles, parse SQLCommenter tags, inspect EXPLAIN plans, and generate recommendations.
+- `infrastructure`: Netty wire codecs for PostgreSQL v3.0, upstream/downstream socket handlers, Picocli command runner, embedded HTTP/SSE dashboard, Prometheus exporter, and JUnit/SARIF report writers.
 
 Detailed design documents are located in the `docs/` directory:
 - [Architecture details](docs/architecture.md)
@@ -87,12 +91,12 @@ Point your application database connection to `localhost:5433` instead of `5432`
 ### CLI Options
 
 ```text
-Usage: querylens proxy [-hV] [--fail-on-violation] [--listen-port=<listenPort>]
-                       [--target-host=<targetHost>] [--target-port=<targetPort>]
-                       [--dashboard-port=<dashboardPort>]
-                       [--nplusone-threshold=<nPlusOneThreshold>]
-                       [--slow-threshold-ms=<slowThresholdMs>]
-                       [--report-json=<reportJsonPath>]
+Usage: querylens proxy [-fhqV] [-d=<dashboardPort>] [-H=<targetHost>]
+                       [-l=<listenPort>] [-m=<maxTxDurationMs>]
+                       [-n=<nPlusOneThreshold>] [-p=<targetPort>]
+                       [-r=<reportJsonPath>] [--report-junit=<reportJunitPath>]
+                       [--report-sarif=<reportSarifPath>]
+                       [-s=<slowThresholdMs>] [-w=<webhookUrl>]
 
 Options:
   -l, --listen-port=<listenPort>       Port QueryLens listens on (default: 5433)
@@ -101,8 +105,13 @@ Options:
   -d, --dashboard-port=<dashboardPort> Port for web dashboard and SSE (default: 8080)
   -n, --nplusone-threshold=<count>     Repetition count to flag N+1 (default: 5)
   -s, --slow-threshold-ms=<ms>         Duration threshold for slow queries (default: 100)
-  -f, --fail-on-violation              Exit with non-zero status code on violations
+  -m, --max-tx-duration-ms=<ms>        Maximum idle duration before flagging transaction (default: 5000)
+  -w, --webhook-url=<url>              Webhook URL for Slack, Discord, or Teams alerts
+  -f, --fail-on-violation              Exit with non-zero status code on violations (CI/CD gate)
   -r, --report-json=<path>             Path to write final violation report in JSON format
+      --report-junit=<path>            Path to write final violation report in JUnit XML format
+      --report-sarif=<path>            Path to write final violation report in OASIS SARIF v2.1.0 format
+  -q, --quiet                          Suppress live query console ticker output
   -h, --help                           Show this help message and exit
   -V, --version                        Print version information and exit
 ```

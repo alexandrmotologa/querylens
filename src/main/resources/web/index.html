@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QueryLens — Real-Time PostgreSQL Query Analyzer</title>
+    <title>QueryLens — Real-Time PostgreSQL Query Analyzer & N+1 Hunter</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header class="app-header">
@@ -25,6 +25,7 @@
                 <span class="status-indicator live" id="live-indicator"></span>
                 <span class="status-text" id="status-text">Connecting...</span>
                 <span class="active-badge" id="client-count">Port 5433</span>
+                <a href="/metrics" target="_blank" class="nav-metrics-btn">/metrics</a>
             </div>
         </div>
     </header>
@@ -39,6 +40,11 @@
                 </div>
                 <div class="metric-value" id="val-qps">0.0</div>
                 <div class="metric-subtext">Queries per second</div>
+                <div class="sparkline-container">
+                    <svg id="qps-sparkline" viewBox="0 0 200 30" preserveAspectRatio="none">
+                        <path id="sparkline-path" d="M0,30 L200,30" fill="rgba(99, 102, 241, 0.1)" stroke="#6366f1" stroke-width="2"/>
+                    </svg>
+                </div>
             </div>
 
             <div class="metric-card" id="card-total-queries">
@@ -72,8 +78,10 @@
         <!-- Active Violations Section -->
         <section class="content-section" id="violations-section">
             <div class="section-header">
-                <h2>Active Violations & Causal Analysis</h2>
-                <span class="section-tag" id="violation-count-tag">0 detected</span>
+                <div class="section-title-group">
+                    <h2>Active Violations & Causal Analysis</h2>
+                    <span class="section-tag" id="violation-count-tag">0 detected</span>
+                </div>
             </div>
             <div class="table-card">
                 <div class="table-responsive">
@@ -81,16 +89,18 @@
                         <thead>
                             <tr>
                                 <th>Pattern</th>
+                                <th>Source Location</th>
                                 <th>Repeats</th>
                                 <th>Latency</th>
                                 <th>Parent Driving Query</th>
                                 <th>Repeated Child Query</th>
                                 <th>Actionable Recommendation</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="violations-body">
                             <tr class="empty-state-row">
-                                <td colspan="6">No database anti-patterns detected yet. Listening on port 5433...</td>
+                                <td colspan="8">No database anti-patterns detected yet. Listening on port 5433...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -98,14 +108,37 @@
             </div>
         </section>
 
-        <!-- Live Query Stream and Top Queries side-by-side or stacked -->
+        <!-- Live Stream & Top Queries Section -->
         <div class="two-column-layout">
-            <!-- Live Query Stream -->
+            <!-- Live Query Stream with Interactive Controls -->
             <section class="content-section">
                 <div class="section-header">
-                    <h2>Live Query Stream</h2>
-                    <span class="section-tag">Streaming (SSE)</span>
+                    <div class="section-title-group">
+                        <h2>Live Query Stream</h2>
+                        <span class="section-tag" id="stream-status-tag">Streaming</span>
+                    </div>
+                    <div class="stream-controls">
+                        <button id="btn-pause-stream" class="btn-control" title="Pause or Resume Live Stream">
+                            <span id="pause-icon">⏸</span> <span id="pause-label">Pause</span>
+                        </button>
+                    </div>
                 </div>
+
+                <!-- Filter Toolbar -->
+                <div class="filter-toolbar">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="filter-search" placeholder="Filter queries or tables..." autocomplete="off">
+                    </div>
+                    <select id="filter-type" class="filter-select">
+                        <option value="">All Types</option>
+                        <option value="SELECT">SELECT</option>
+                        <option value="INSERT">INSERT</option>
+                        <option value="UPDATE">UPDATE</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                    <input type="number" id="filter-min-latency" class="filter-number" placeholder="Min ms" min="0">
+                </div>
+
                 <div class="table-card">
                     <div class="table-responsive">
                         <table class="data-table" id="stream-table">
@@ -115,11 +148,12 @@
                                     <th>Duration</th>
                                     <th>Rows</th>
                                     <th>SQL Query</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="stream-body">
                                 <tr class="empty-state-row">
-                                    <td colspan="4">Awaiting database queries...</td>
+                                    <td colspan="5">Awaiting database queries...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -130,8 +164,10 @@
             <!-- Top Slow Queries -->
             <section class="content-section">
                 <div class="section-header">
-                    <h2>Top Queries by Latency</h2>
-                    <span class="section-tag">P99 Profiler</span>
+                    <div class="section-title-group">
+                        <h2>Top Queries by Latency</h2>
+                        <span class="section-tag">P99 Profiler</span>
+                    </div>
                 </div>
                 <div class="table-card">
                     <div class="table-responsive">
@@ -143,11 +179,12 @@
                                     <th>P50</th>
                                     <th>P99</th>
                                     <th>Normalized Statement</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="top-queries-body">
                                 <tr class="empty-state-row">
-                                    <td colspan="5">No query fingerprints recorded yet.</td>
+                                    <td colspan="6">No query fingerprints recorded yet.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -157,10 +194,16 @@
         </div>
     </main>
 
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <footer class="app-footer">
         <div class="footer-content">
-            <span>QueryLens v1.0.0 &bull; Transparent PostgreSQL Proxy &bull; Java 21 & Netty</span>
-            <a href="https://github.com/alexandrmotologa/querylens" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+            <span>QueryLens v1.0.0 &bull; Transparent PostgreSQL Proxy &bull; Java 21 LTS & Netty</span>
+            <div class="footer-links">
+                <a href="/metrics" target="_blank">Prometheus Metrics</a>
+                <a href="https://github.com/alexandrmotologa/querylens" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+            </div>
         </div>
     </footer>
 

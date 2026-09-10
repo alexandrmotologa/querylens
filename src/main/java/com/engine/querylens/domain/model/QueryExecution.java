@@ -16,7 +16,8 @@ public record QueryExecution(
         Instant startTime,
         Duration duration,
         long rowCount,
-        String transactionId
+        String transactionId,
+        SqlMetadata sqlMetadata
 ) {
     public QueryExecution {
         executionId = executionId != null ? executionId : UUID.randomUUID().toString();
@@ -25,6 +26,20 @@ public record QueryExecution(
         channelId = channelId != null ? channelId : "unknown";
         startTime = startTime != null ? startTime : Instant.now();
         duration = duration != null ? duration : Duration.ZERO;
+        sqlMetadata = sqlMetadata != null ? sqlMetadata : SqlMetadata.EMPTY;
+    }
+
+    public QueryExecution(
+            String executionId,
+            QueryFingerprint fingerprint,
+            String rawSql,
+            String channelId,
+            Instant startTime,
+            Duration duration,
+            long rowCount,
+            String transactionId
+    ) {
+        this(executionId, fingerprint, rawSql, channelId, startTime, duration, rowCount, transactionId, SqlMetadata.EMPTY);
     }
 
     public long durationMs() {

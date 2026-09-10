@@ -1,19 +1,17 @@
 package com.engine.querylens.infrastructure.tui;
 
 import com.engine.querylens.domain.event.AntiPatternEvent;
-import com.engine.querylens.domain.event.NPlusOneDetectedEvent;
 import com.engine.querylens.domain.event.QueryCompletedEvent;
-import com.engine.querylens.domain.event.SlowQueryAlertEvent;
-import com.engine.querylens.domain.event.TransactionAlertEvent;
 import com.engine.querylens.domain.model.ViolationReport;
 import com.engine.querylens.domain.port.AlertPublisherPort;
 import com.engine.querylens.infrastructure.dashboard.SseEventBroadcaster;
+import com.engine.querylens.infrastructure.webhook.WebhookAlertDispatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Renders live query completions and prominent anti-pattern alert banners to the terminal using ANSI escape codes.
- * Concurrently forwards events to the web dashboard SSE broadcaster.
+ * Concurrently forwards events to the web dashboard SSE broadcaster and external webhooks.
  */
 public class TerminalUiRenderer implements AlertPublisherPort {
     private static final Logger log = LoggerFactory.getLogger(TerminalUiRenderer.class);
@@ -29,21 +27,31 @@ public class TerminalUiRenderer implements AlertPublisherPort {
     private static final String WHITE_BOLD = "\u001B[1;37m";
 
     private final SseEventBroadcaster sseBroadcaster;
+    private final WebhookAlertDispatcher webhookDispatcher;
     private final boolean quiet;
 
-    public TerminalUiRenderer(SseEventBroadcaster sseBroadcaster, boolean quiet) {
+    public TerminalUiRenderer(SseEventBroadcaster sseBroadcaster, WebhookAlertDispatcher webhookDispatcher, boolean quiet) {
         this.sseBroadcaster = sseBroadcaster;
+        this.webhookDispatcher = webhookDispatcher;
         this.quiet = quiet;
     }
 
+    public TerminalUiRenderer(SseEventBroadcaster sseBroadcaster, boolean quiet) {
+        this(sseBroadcaster, null, quiet);
+    }
+
     public TerminalUiRenderer(SseEventBroadcaster sseBroadcaster) {
-        this(sseBroadcaster, false);
+        this(sseBroadcaster, null, false);
     }
 
     @Override
     public void publishAntiPattern(AntiPatternEvent event) {
         if (sseBroadcaster != null) {
             sseBroadcaster.broadcast("anti_pattern", event);
+        }
+
+        if (webhookDispatcher != null) {
+            webhookDispatcher.dispatch(event.report());
         }
 
         ViolationReport report = event.report();
@@ -60,8 +68,10 @@ public class TerminalUiRenderer implements AlertPublisherPort {
             var exec = event.execution();
             long ms = exec.durationMs();
             String durationColor = ms > 100 ? YELLOW : GREEN;
-            System.out.printf("[%s%s%s] (%s%d ms%s, %d rows) %s%n",
+            String sourceTag = exec.sqlMetadata().hasSourceInfo() ? " [" + exec.sqlMetadata().sourceSummary() + "]" : "";
+            System.out.printf("[%s%s%s]%s (%s%d ms%s, %d rows) %s%n",
                     CYAN, exec.fingerprint().queryType(), RESET,
+                    sourceTag,
                     durationColor, ms, RESET,
                     exec.rowCount(),
                     truncate(exec.rawSql(), 85)
@@ -78,6 +88,9 @@ public class TerminalUiRenderer implements AlertPublisherPort {
                 BOLD, RESET, report.transactionId(),
                 BOLD, RESET, report.repetitionCount());
 
+        if (report.sourceLocation() != null && !report.sourceLocation().isBlank()) {
+            System.out.printf("%sSource Location:%s %s%s%s%n", BOLD, RESET, GREEN, report.sourceLocation(), RESET);
+        }
         if (report.parentQuery() != null && !report.parentQuery().isBlank()) {
             System.out.printf("%sParent Query:%s %s%n", BOLD, RESET, report.parentQuery());
         }

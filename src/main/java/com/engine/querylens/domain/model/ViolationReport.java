@@ -22,7 +22,9 @@ public record ViolationReport(
         String parentQuery,
         String offendingQuery,
         long queryHash,
-        String recommendation
+        String recommendation,
+        String sourceLocation,
+        String traceId
 ) {
     public ViolationReport {
         id = id != null ? id : UUID.randomUUID().toString();
@@ -34,6 +36,8 @@ public record ViolationReport(
         parentQuery = parentQuery != null ? parentQuery : "";
         offendingQuery = offendingQuery != null ? offendingQuery : "";
         recommendation = recommendation != null ? recommendation : "";
+        sourceLocation = sourceLocation != null ? sourceLocation : "";
+        traceId = traceId != null ? traceId : "";
     }
 
     public static Builder builder(AntiPatternType type) {
@@ -56,6 +60,8 @@ public record ViolationReport(
         private String offendingQuery;
         private long queryHash;
         private String recommendation;
+        private String sourceLocation;
+        private String traceId;
 
         public Builder(AntiPatternType type) {
             this.type = type;
@@ -75,11 +81,14 @@ public record ViolationReport(
         public Builder offendingQuery(String offendingQuery) { this.offendingQuery = offendingQuery; return this; }
         public Builder queryHash(long queryHash) { this.queryHash = queryHash; return this; }
         public Builder recommendation(String recommendation) { this.recommendation = recommendation; return this; }
+        public Builder sourceLocation(String sourceLocation) { this.sourceLocation = sourceLocation; return this; }
+        public Builder traceId(String traceId) { this.traceId = traceId; return this; }
 
         public ViolationReport build() {
             return new ViolationReport(
                     id, type, timestamp, channelId, transactionId, title, description, impact,
-                    repetitionCount, durationMs, rowCount, parentQuery, offendingQuery, queryHash, recommendation
+                    repetitionCount, durationMs, rowCount, parentQuery, offendingQuery, queryHash,
+                    recommendation, sourceLocation, traceId
             );
         }
     }
