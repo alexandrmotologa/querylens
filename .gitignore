@@ -26,5 +26,6 @@ out/
 
 ### Logs and OS files ###
 *.log
+*.mp4
 .DS_Store
 Thumbs.db

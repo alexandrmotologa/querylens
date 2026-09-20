@@ -37,7 +37,7 @@ QueryLens is a transparent PostgreSQL v3.0 wire-protocol proxy and query analysi
 QueryLens serves an interactive real-time telemetry dashboard backed by Java 21 Virtual Threads and Server-Sent Events (SSE) at `http://localhost:8080/dashboard`.
 
 <p align="center">
-  <img src="docs/images/dashboard-overview.png?raw=true" alt="QueryLens Real-Time Overview Dashboard" width="100%" style="border-radius: 12px; box-shadow: 0 16px 32px rgba(0,0,0,0.25);" />
+  <img src="docs/images/querylens_demo.gif?raw=true" alt="QueryLens Interactive Telemetry & N+1 Cascade Detection Demo" width="100%" style="border-radius: 12px; box-shadow: 0 16px 36px rgba(0,0,0,0.4);" />
 </p>
 
 The overview displays live QPS with sparkline velocity, total queries, tail latencies (P50, P90, P99), and active anti-pattern detections with direct source code attribution (`controller`, `action`, `file`, `line`).
