@@ -16,7 +16,7 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 querylens && \
     adduser --system --uid 1001 --ingroup querylens querylens
 
-COPY --from=builder /build/target/querylens-1.0.0-SNAPSHOT.jar /app/querylens.jar
+COPY --from=builder /build/target/querylens*.jar /app/querylens.jar
 
 RUN chown -R querylens:querylens /app
 USER querylens

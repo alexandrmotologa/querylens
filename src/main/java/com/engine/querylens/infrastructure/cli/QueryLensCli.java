@@ -41,14 +41,26 @@ import java.util.concurrent.Callable;
         description = "Real-Time PostgreSQL Wire Protocol Proxy & N+1 Anti-Pattern Hunter",
         mixinStandardHelpOptions = true,
         version = "QueryLens 1.0.0",
-        subcommands = {QueryLensCli.ProxyCommand.class}
+        subcommands = {QueryLensCli.ProxyCommand.class, QueryLensCli.VersionCommand.class}
 )
 public class QueryLensCli implements Callable<Integer> {
+
+    @Option(names = {"-v", "--version"}, versionHelp = true, description = "Print version information and exit")
+    private boolean versionRequested;
 
     @Override
     public Integer call() {
         CommandLine.usage(this, System.out);
         return 0;
+    }
+
+    @Command(name = "version", description = "Print version information and exit", mixinStandardHelpOptions = true)
+    public static class VersionCommand implements Callable<Integer> {
+        @Override
+        public Integer call() {
+            System.out.println("QueryLens 1.0.0");
+            return 0;
+        }
     }
 
     @Command(name = "proxy", description = "Start the transparent PostgreSQL wire protocol proxy and analyzer", mixinStandardHelpOptions = true)
